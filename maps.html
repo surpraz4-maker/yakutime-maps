@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YAKUtime Maps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS/JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <style>
+        #map { height: 100%; width: 100%; z-index: 1; }
+        .custom-div-icon { background: none; border: none; }
+        /* アニメーション：ピンが少し浮く感じ */
+        .pin-bounce {
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'yakutime-v1';
+        const authToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let map, marker;
+        // 薬局の座標 (ひまわり薬局の例: 東京駅付近)
+        const shopLat = 35.6812;
+        const shopLng = 139.7671;
+        const shopLocation = [shopLat, shopLng]; 
+
+        // UI要素
+        const waitingCountEl = document.getElementById('waiting-count');
+        const lastUpdateEl = document.getElementById('last-update');
+        const statusBadge = document.getElementById('status-badge');
+        const googleMapsBtn = document.getElementById('google-maps-btn');
+
+        // Googleマップ連携URLの生成 (ユニバーサルリンク)
+        const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${shopLat},${shopLng}`;
+
+        async function init() {
+            // 1. 地図の初期化 (Leaflet)
+            map = L.map('map', { zoomControl: false }).setView(shopLocation, 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            // 2. 認証とデータ取得
+            try {
+                if (authToken) {
+                    await signInWithCustomToken(auth, authToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) startListening();
+                });
+            } catch (e) {
+                console.error("Auth Error", e);
+            }
+
+            // 3. Googleマップボタンの設定
+            googleMapsBtn.onclick = () => {
+                window.open(googleMapsUrl, '_blank');
+            };
+        }
+
+        function startListening() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const shopId = urlParams.get('shopId') || 'default-store';
+            const path = `artifacts/${appId}/public/data/shops/${shopId}/status/waiting`;
+            
+            onSnapshot(doc(db, path), (snap) => {
+                if (snap.exists()) {
+                    updateUI(snap.data());
+                } else {
+                    updateUI({ count: 0 });
+                }
+            });
+        }
+
+        function updateUI(data) {
+            const count = data.count || 0;
+            waitingCountEl.innerText = count;
+
+            // ステータスバッジの更新
+            if (count >= 10) {
+                statusBadge.innerText = "混雑";
+                statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200";
+            } else if (count >= 5) {
+                statusBadge.innerText = "やや混雑";
+                statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200";
+            } else {
+                statusBadge.innerText = "空いています";
+                statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200";
+            }
+
+            // 更新時刻
+            if (data.updatedAt) {
+                const date = data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt);
+                lastUpdateEl.innerText = `${date.toLocaleTimeString()} 更新`;
+            }
+
+            // 地図上のマーカー（ピン）を更新
+            if (marker) map.removeLayer(marker);
+            
+            const icon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div class="pin-bounce">
+                        <div class="relative flex flex-col items-center">
+                            <div class="bg-blue-600 px-3 py-1 rounded-lg text-white font-black text-lg shadow-xl border-2 border-white mb-1">
+                                ${count}
+                            </div>
+                            <div class="w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow-lg"></div>
+                        </div>
+                       </div>`,
+                iconSize: [60, 60],
+                iconAnchor: [30, 50]
+            });
+
+            marker = L.marker(shopLocation, { icon }).addTo(map)
+                .bindPopup(`
+                    <div class="text-center p-1">
+                        <b class="text-blue-600">ひまわり薬局</b><br>
+                        現在 ${count} 人待ち<br>
+                        <a href="${googleMapsUrl}" target="_blank" class="text-xs text-blue-500 font-bold underline">Googleマップで見る</a>
+                    </div>
+                `);
+        }
+
+        window.onload = init;
+    </script>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden flex flex-col">
+    <!-- ヘッダー -->
+    <header class="bg-white/80 backdrop-blur-md p-4 shadow-sm flex justify-between items-center z-10 absolute top-0 left-0 right-0 m-4 rounded-2xl border border-white/50">
+        <div class="flex items-center">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white mr-3 shadow-blue-200 shadow-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-7h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            </div>
+            <div>
+                <h1 class="font-bold text-gray-800 text-sm">ひまわり薬局</h1>
+                <div id="last-update" class="text-[9px] text-gray-400">接続中...</div>
+            </div>
+        </div>
+        <div id="status-badge" class="px-3 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">
+            ...
+        </div>
+    </header>
+
+    <!-- 地図エリア -->
+    <main class="flex-1 relative">
+        <div id="map"></div>
+
+        <!-- 下部のフローティングアクションパネル -->
+        <div class="absolute bottom-8 left-0 right-0 px-6 z-[1000]">
+            <div class="max-w-md mx-auto bg-white/95 backdrop-blur shadow-2xl rounded-3xl p-6 border border-white">
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <p class="text-xs text-gray-400 font-bold mb-1 tracking-wider uppercase">Current Wait</p>
+                        <div class="flex items-baseline">
+                            <span id="waiting-count" class="text-5xl font-black text-blue-600">--</span>
+                            <span class="text-gray-400 ml-2 font-bold italic">People</span>
+                        </div>
+                    </div>
+                    <button id="google-maps-btn" class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-6 py-3 rounded-2xl font-bold flex items-center shadow-lg shadow-blue-200 transition-all">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                        </svg>
+                        ルート案内
+                    </button>
+                </div>
+                <div class="flex items-center text-[10px] text-gray-400 border-t pt-4">
+                    <svg class="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Googleマップでルートを検索できます
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
