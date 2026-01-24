@@ -2,113 +2,79 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YAKUtime Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAKUtime Pro - 管理設定</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- QR Code Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
     <style>
-        body { background-color: #f8fafc; font-family: 'Helvetica Neue', Arial, sans-serif; }
-        .tab-active { color: #2e7d32; border-bottom: 3px solid #2e7d32; }
+        body { background-color: #f8fafc; font-family: sans-serif; }
+        .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="p-4 sm:p-8">
 
-    <!-- Header -->
-    <header class="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm">
-        <div class="flex items-center gap-2">
-            <div class="bg-[#2e7d32] p-1.5 rounded-lg text-white">
-                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-black text-slate-800">YAKUtime <span class="text-blue-600">Pro</span></h1>
+                <p class="text-slate-500 font-bold text-sm">薬局バックヤード管理システム</p>
             </div>
-            <h1 class="text-xl font-black text-gray-800 tracking-tight">YAKUtime <span class="text-[#2e7d32]">Pro</span></h1>
-        </div>
-        <div id="current-shop-name" class="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full italic">未選択</div>
-    </header>
-
-    <!-- Navigation Tabs -->
-    <nav class="bg-white border-b border-gray-200 flex justify-around px-2 shadow-sm">
-        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="py-4 px-4 font-bold text-sm tab-active flex items-center gap-2 transition-all">
-            <i data-lucide="clock" class="w-4 h-4"></i>更新
-        </button>
-        <button onclick="switchTab('qrcode')" id="tab-qrcode" class="py-4 px-4 font-bold text-sm text-gray-400 flex items-center gap-2 transition-all">
-            <i data-lucide="qr-code" class="w-4 h-4"></i>案内
-        </button>
-        <button onclick="switchTab('settings')" id="tab-settings" class="py-4 px-4 font-bold text-sm text-gray-400 flex items-center gap-2 transition-all">
-            <i data-lucide="settings" class="w-4 h-4"></i>設定
-        </button>
-    </nav>
-
-    <!-- Content Area -->
-    <main class="flex-1 overflow-y-auto p-6 no-scrollbar">
-        
-        <!-- Tab: Dashboard -->
-        <div id="content-dashboard" class="space-y-6">
-            <div class="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 text-center max-w-sm mx-auto">
-                <p class="text-gray-400 font-bold text-xs uppercase tracking-widest mb-2">Current Waiting</p>
-                <div class="flex items-center justify-center gap-8 my-6">
-                    <button onclick="updateCount(-1)" class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center active:scale-90 transition-transform shadow-inner">
-                        <i data-lucide="minus" class="w-8 h-8 text-gray-600"></i>
-                    </button>
-                    <span id="waiting-display" class="text-7xl font-black text-gray-800 tabular-nums">0</span>
-                    <button onclick="updateCount(1)" class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center active:scale-90 transition-transform shadow-green-100 shadow-lg">
-                        <i data-lucide="plus" class="w-8 h-8 text-green-700"></i>
-                    </button>
-                </div>
-                <p class="text-xs text-gray-400 italic">※リアルタイムで患者用マップに反映されます</p>
+            <div id="auth-status" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-xs font-bold">
+                接続確認中...
             </div>
+        </header>
+
+        <!-- タブ切り替え -->
+        <div class="flex border-b border-slate-200 mb-6 bg-white rounded-t-xl">
+            <button onclick="switchTab('settings')" id="tab-settings" class="flex-1 py-4 font-bold tab-active transition-all">店舗設定</button>
+            <button onclick="switchTab('demo')" id="tab-demo" class="flex-1 py-4 font-bold text-slate-400 transition-all">データ操作</button>
         </div>
 
-        <!-- Tab: QR Code -->
-        <div id="content-qrcode" class="hidden space-y-6 flex flex-col items-center">
-            <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col items-center text-center">
-                <h3 class="font-bold text-gray-800 mb-4">患者様案内用QR</h3>
-                <div id="qrcode-container" class="bg-white p-4 rounded-xl border-4 border-gray-50 mb-6"></div>
-                <p class="text-sm text-gray-500 mb-4 px-4 leading-relaxed">このQRを店頭に掲示すると、<br>患者様が直接混雑状況を確認できます。</p>
-                <button onclick="copyURL()" class="text-green-600 font-bold text-sm flex items-center gap-1">
-                    <i data-lucide="copy" class="w-4 h-4"></i>URLをコピー
-                </button>
+        <!-- 店舗設定コンテンツ -->
+        <div id="content-settings" class="bg-white p-6 rounded-b-xl shadow-sm space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-slate-700 italic">Shop ID (半角英数字)</label>
+                    <input type="text" id="shop-id" value="shibuya-001" class="w-full p-3 border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-slate-700 italic">店舗名</label>
+                    <input type="text" id="shop-name" value="渋谷センター薬局" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-slate-700 italic">緯度 (Latitude)</label>
+                    <input type="number" id="shop-lat" value="35.6600" step="0.0001" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-slate-700 italic">経度 (Longitude)</label>
+                    <input type="number" id="shop-lng" value="139.7000" step="0.0001" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
             </div>
-        </div>
-
-        <!-- Tab: Settings -->
-        <div id="content-settings" class="hidden space-y-4 max-w-md mx-auto">
-            <div class="bg-white p-6 rounded-3xl shadow-lg border border-gray-100 space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Shop ID</label>
-                    <input id="input-shop-id" type="text" value="shibuya-001" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 outline-none font-mono">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Shop Name</label>
-                    <input id="input-shop-name" type="text" placeholder="例: 渋谷ひまわり薬局" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 outline-none">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Latitude</label>
-                        <input id="input-lat" type="number" step="0.0001" placeholder="35.6600" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Longitude</label>
-                        <input id="input-lng" type="number" step="0.0001" placeholder="139.7000" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none">
-                    </div>
-                </div>
-                <button onclick="saveSettings()" class="w-full bg-[#2e7d32] text-white py-4 rounded-2xl font-black shadow-lg shadow-green-100 active:scale-95 transition-all">設定を保存して登録</button>
-            </div>
-            
-            <button onclick="seedDemoData()" class="w-full border-2 border-dashed border-gray-200 text-gray-400 py-3 rounded-2xl text-xs font-bold hover:bg-gray-50 transition-colors">
-                + デモ用サンプルデータを一括作成
+            <button id="btn-save" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                <i data-lucide="save" class="w-5 h-5"></i>
+                設定を保存してFirestoreを実体化
             </button>
         </div>
-    </main>
 
-    <!-- Toast message container -->
-    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full text-xs font-bold opacity-0 transition-opacity z-[9999]"></div>
+        <!-- データ操作コンテンツ -->
+        <div id="content-demo" class="hidden bg-white p-6 rounded-b-xl shadow-sm space-y-6">
+            <div class="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <p class="text-amber-700 text-sm font-bold">※デモボタンを押すと、3つのサンプル店舗データがFirestoreに一括登録されます。</p>
+            </div>
+            <button id="btn-demo" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-xl shadow-lg transition-all">
+                デモ用サンプルデータを一括作成
+            </button>
+        </div>
+
+        <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold shadow-2xl opacity-0 transition-opacity pointer-events-none">
+            保存完了しました！
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAjSZkIuGQ4oRoMcZYLaZbdBXK45cBBXos",
@@ -119,136 +85,98 @@
             appId: "1:732724570588:web:6e64cba96c6fd17646c719"
         };
 
-        const appId = 'yakutime-for-ipad';
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
         const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'yakutime-for-ipad';
 
-        let currentShopId = localStorage.getItem('yakutime_shop_id') || 'shibuya-001';
-        let currentCount = 0;
-        let qrCode;
-
-        // Init icons
         lucide.createIcons();
 
-        // Initialize App
-        async function init() {
-            await signInAnonymously(auth);
-            
-            // Sync initial UI from localStorage
-            document.getElementById('input-shop-id').value = currentShopId;
-            startSyncing();
-            initQR();
-        }
-
-        function startSyncing() {
-            const shopRef = doc(db, 'artifacts', appId, 'public', 'data', 'shops', currentShopId);
-            onSnapshot(shopRef, (snap) => {
-                if (snap.exists()) {
-                    const data = snap.data();
-                    currentCount = data.status?.waiting?.count || 0;
-                    document.getElementById('waiting-display').innerText = currentCount;
-                    document.getElementById('current-shop-name').innerText = data.name || currentShopId;
-                    
-                    // Fill inputs if currently in settings
-                    document.getElementById('input-shop-name').value = data.name || '';
-                    document.getElementById('input-lat').value = data.location?.lat || '';
-                    document.getElementById('input-lng').value = data.location?.lng || '';
-                }
-            });
-        }
-
-        window.updateCount = async (delta) => {
-            currentCount = Math.max(0, currentCount + delta);
-            const shopRef = doc(db, 'artifacts', appId, 'public', 'data', 'shops', currentShopId);
-            await updateDoc(shopRef, {
-                "status.waiting.count": currentCount,
-                "status.waiting.updatedAt": serverTimestamp()
-            });
-        };
-
-        window.saveSettings = async () => {
-            const newId = document.getElementById('input-shop-id').value;
-            const name = document.getElementById('input-shop-name').value;
-            const lat = parseFloat(document.getElementById('input-lat').value);
-            const lng = parseFloat(document.getElementById('input-lng').value);
-
-            if (!newId || !name) return showToast("IDと店名を入力してください");
-
-            currentShopId = newId;
-            localStorage.setItem('yakutime_shop_id', newId);
-
-            const shopRef = doc(db, 'artifacts', appId, 'public', 'data', 'shops', currentShopId);
-            await setDoc(shopRef, {
-                name: name,
-                location: { lat, lng },
-                status: {
-                    waiting: { count: currentCount, updatedAt: serverTimestamp() }
-                }
-            }, { merge: true });
-
-            showToast("設定を保存しました！");
-            startSyncing();
-            initQR();
-        };
-
-        window.seedDemoData = async () => {
-            const demoShops = [
-                { id: 'shibuya-001', name: '渋谷センター薬局', lat: 35.6600, lng: 139.7000, count: 1 },
-                { id: 'shibuya-002', name: '渋谷ABC薬局', lat: 35.6620, lng: 139.7020, count: 4 },
-                { id: 'shibuya-003', name: 'ヤクタタイム薬局', lat: 35.6580, lng: 139.6980, count: 7 }
-            ];
-
-            for (const s of demoShops) {
-                const ref = doc(db, 'artifacts', appId, 'public', 'data', 'shops', s.id);
-                await setDoc(ref, {
-                    name: s.name,
-                    location: { lat: s.lat, lng: s.lng },
-                    status: { waiting: { count: s.count, updatedAt: serverTimestamp() } }
-                });
-            }
-            showToast("サンプルデータを作成しました");
-        };
-
-        function initQR() {
-            const container = document.getElementById('qrcode-container');
-            container.innerHTML = "";
-            const url = `https://surpraz4-maker.github.io/yakutime-maps/?shopId=${currentShopId}`;
-            qrCode = new QRCode(container, {
-                text: url,
-                width: 200,
-                height: 200,
-                colorDark : "#2e7d32",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
-        }
-
-        window.copyURL = () => {
-            const url = `https://surpraz4-maker.github.io/yakutime-maps/?shopId=${currentShopId}`;
-            navigator.clipboard.writeText(url);
-            showToast("URLをコピーしました！");
-        };
-
-        window.switchTab = (tabId) => {
-            ['dashboard', 'qrcode', 'settings'].forEach(id => {
-                document.getElementById(`content-${id}`).classList.add('hidden');
-                document.getElementById(`tab-${id}`).classList.remove('tab-active');
-                document.getElementById(`tab-${id}`).classList.add('text-gray-400');
-            });
-            document.getElementById(`content-${tabId}`).classList.remove('hidden');
-            document.getElementById(`tab-${tabId}`).classList.add('tab-active');
-            document.getElementById(`tab-${tabId}`).classList.remove('text-gray-400');
+        // タブ切り替え
+        window.switchTab = (tab) => {
+            const isSettings = tab === 'settings';
+            document.getElementById('content-settings').classList.toggle('hidden', !isSettings);
+            document.getElementById('content-demo').classList.toggle('hidden', isSettings);
+            document.getElementById('tab-settings').className = isSettings ? 'flex-1 py-4 font-bold tab-active' : 'flex-1 py-4 font-bold text-slate-400';
+            document.getElementById('tab-demo').className = !isSettings ? 'flex-1 py-4 font-bold tab-active' : 'flex-1 py-4 font-bold text-slate-400';
         };
 
         function showToast(msg) {
-            const el = document.getElementById('toast');
-            el.innerText = msg;
-            el.style.opacity = "1";
-            setTimeout(() => { el.style.opacity = "0"; }, 2000);
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.remove('opacity-0');
+            setTimeout(() => t.classList.add('opacity-0'), 3000);
         }
 
-        window.onload = init;
+        // 保存処理
+        document.getElementById('btn-save').onclick = async () => {
+            const sid = document.getElementById('shop-id').value;
+            const sname = document.getElementById('shop-name').value;
+            const slat = parseFloat(document.getElementById('shop-lat').value);
+            const slng = parseFloat(document.getElementById('shop-lng').value);
+
+            try {
+                // 1. 親ドキュメントの実体化 (artifacts/yakutime-for-ipad)
+                const parentRef = doc(db, 'artifacts', appId);
+                await setDoc(parentRef, { 
+                    lastUpdated: serverTimestamp(),
+                    appName: "YAKUtime Maps"
+                }, { merge: true });
+
+                // 2. 店舗データの保存
+                const shopRef = doc(db, 'artifacts', appId, 'public', 'data', 'shops', sid);
+                await setDoc(shopRef, {
+                    name: sname,
+                    location: { lat: slat, lng: slng },
+                    status: {
+                        waiting: { count: 0, updatedAt: serverTimestamp() }
+                    }
+                });
+
+                showToast("実体化・保存が完了しました！");
+            } catch (e) {
+                console.error(e);
+                showToast("エラーが発生しました: " + e.message);
+            }
+        };
+
+        // デモデータ一括作成
+        document.getElementById('btn-demo').onclick = async () => {
+            const batch = writeBatch(db);
+            const shops = [
+                { id: 'shibuya-001', name: '渋谷センター薬局', lat: 35.6601, lng: 139.7001, count: 1 },
+                { id: 'shibuya-002', name: '渋谷ABC薬局', lat: 35.6620, lng: 139.7020, count: 4 },
+                { id: 'shibuya-003', name: 'ヤクタイム薬局', lat: 35.6580, lng: 139.7015, count: 7 }
+            ];
+
+            try {
+                // 親の実体化も忘れずに
+                const parentRef = doc(db, 'artifacts', appId);
+                batch.set(parentRef, { lastUpdated: serverTimestamp() }, { merge: true });
+
+                shops.forEach(s => {
+                    const ref = doc(db, 'artifacts', appId, 'public', 'data', 'shops', s.id);
+                    batch.set(ref, {
+                        name: s.name,
+                        location: { lat: s.lat, lng: s.lng },
+                        status: {
+                            waiting: { count: s.count, updatedAt: serverTimestamp() }
+                        }
+                    });
+                });
+                await batch.commit();
+                showToast("3店舗のデモデータを作成しました！");
+            } catch (e) {
+                showToast("エラー: " + e.message);
+            }
+        };
+
+        window.onload = async () => {
+            onAuthStateChanged(auth, (user) => {
+                if (user) document.getElementById('auth-status').innerText = "Firestore 接続済み";
+            });
+            await signInAnonymously(auth);
+        };
     </script>
 </body>
 </html>
