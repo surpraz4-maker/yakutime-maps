@@ -1,313 +1,201 @@
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>YAKUtime Maps</title>
-
-    <!-- PWA Settings -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#fdfdf3">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/854/854878.png">
-    
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Lucide Icons -->
-<script src="https://unpkg.com/lucide@latest"></script>
-
-<style>
-body { background-color: #fdfdf3; font-family: 'Helvetica Neue', Arial, sans-serif; }
-        #map { height: 40vh; width: 100%; z-index: 1; border-bottom: 2px solid #e5e7eb; }
-        .leaflet-control-attribution { display: none; }
-        #map { height: 40vh; width: 100%; z-index: 1; border-bottom: 1px solid #e5e7eb; }
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAKUtime Maps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap');
         
-        /* カスタムマーカーのスタイル */
-        .shop-marker {
-            background: none;
-            border: none;
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            margin: 0;
+            padding: 0;
         }
-        .shop-marker { background: none; border: none; }
-.marker-pin {
-            width: 30px;
-            height: 30px;
-            border-radius: 50% 50% 50% 0;
-            position: absolute;
-            transform: rotate(-45deg);
-            left: 50%;
-            top: 50%;
-            margin: -15px 0 0 -15px;
-            border: 2px solid white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            width: 32px; height: 32px; border-radius: 50% 50% 50% 0;
-            position: absolute; transform: rotate(-45deg);
-            left: 50%; top: 50%; margin: -16px 0 0 -16px;
-            border: 2px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            display: flex; align-items: center; justify-content: center;
-}
-        .marker-text { transform: rotate(45deg); color: white; font-weight: 900; font-size: 12px; }
-        .switch-dot { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-</style>
+
+        /* 地図プレビュー風のドット背景 */
+        .map-canvas {
+            position: fixed;
+            inset: 0;
+            background-color: #f1f5f9;
+            background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+            background-size: 24px 24px;
+            z-index: -1;
+        }
+
+        .header-container {
+            padding: 40px 20px 20px;
+            text-align: center;
+        }
+
+        .search-container {
+            max-width: 500px;
+            margin: 0 auto 32px;
+            padding: 0 20px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+        }
+
+        .pharmacy-card {
+            background: white;
+            border-radius: 32px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .status-badge {
+            background: #eef2ff;
+            color: #6366f1;
+            padding: 4px 16px;
+            border-radius: 100px;
+            font-weight: 900;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .waiting-box {
+            background: #f8fafc;
+            border-radius: 24px;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .detail-button {
+            background: #1e293b;
+            color: white;
+            width: 100%;
+            padding: 18px;
+            border-radius: 20px;
+            font-weight: 900;
+            font-size: 18px;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+
+        .detail-button:active {
+            transform: scale(0.98);
+        }
+
+        .address-link {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .address-link:hover {
+            color: #6366f1;
+        }
+    </style>
 </head>
-<body class="flex flex-col h-screen overflow-hidden">
+<body>
+    <div class="map-canvas"></div>
 
-    <!-- ヘッダー -->
-<header class="bg-[#fdfdf3] pt-4 pb-2 px-6 flex justify-center items-center relative">
-        <h1 class="text-3xl font-black text-[#2e7d32] tracking-tight">YAKUtime</h1>
-        <h1 class="text-3xl font-black text-[#2e7d32] tracking-tight text-center">YAKUtime</h1>
-</header>
+    <div class="header-container">
+        <h1 class="text-3xl font-black text-slate-800 flex items-center justify-center gap-2 mb-2">
+            <i data-lucide="map-pin" class="text-indigo-600"></i>
+            YAKUtime <span class="text-indigo-600">Maps</span>
+        </h1>
+        <p class="text-slate-500 font-bold">近くの薬局の待ち時間を確認</p>
+    </div>
 
-    <!-- 検索バー -->
-<div class="px-6 pb-4 bg-[#fdfdf3]">
-<div class="relative flex items-center">
-<i data-lucide="search" class="absolute left-4 w-5 h-5 text-gray-400"></i>
-            <input type="text" placeholder="Search Maps" class="w-full bg-white border border-gray-200 rounded-full py-3 pl-12 pr-12 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-700">
-            <span class="absolute right-4 text-gray-400 font-bold">AA</span>
-            <input type="text" placeholder="薬局を検索" class="w-full bg-white border border-gray-200 rounded-full py-3 pl-12 pr-12 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-700">
-</div>
-</div>
-
-    <!-- メインコンテンツ (スクロールエリア) -->
-<main class="flex-1 overflow-y-auto no-scrollbar pb-20">
-        <!-- 地図 -->
-        <div class="relative">
-            <div id="map"></div>
-            <!-- 地図上のボタン -->
-            <button class="absolute top-4 right-4 z-[1000] bg-white p-2 rounded-lg shadow-md">
-                <i data-lucide="map" class="w-5 h-5 text-gray-600"></i>
-            </button>
-            <button class="absolute top-16 right-4 z-[1000] bg-white p-2 rounded-lg shadow-md">
-                <i data-lucide="navigation" class="w-5 h-5 text-gray-600"></i>
-            </button>
+    <div class="search-container">
+        <div class="search-input-wrapper">
+            <i data-lucide="search" class="text-slate-400 mr-3"></i>
+            <input type="text" placeholder="エリア・薬局名で検索" class="w-full border-none focus:ring-0 font-bold text-slate-600 outline-none">
         </div>
+    </div>
 
-        <!-- 店舗リスト -->
-        <div class="px-4 mt-4 space-y-1">
-            
-            <!-- 店舗カード 1 -->
-            <div class="bg-white p-4 flex justify-between items-center border-b border-gray-100 active:bg-gray-50 transition-colors">
-                <div class="flex-1">
-                    <div class="flex items-center gap-2">
-                        <h2 class="font-bold text-lg text-gray-800">渋谷センター薬局</h2>
-                        <span class="text-xs text-gray-400">0.2km</span>
-                    </div>
-                    <p class="text-green-600 font-bold">1組待ち</p>
-                </div>
-                <div class="text-right">
-                    <span class="bg-green-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                        空いています
-                    </span>
-                </div>
-            </div>
+    <div id="pharmacy-list" class="px-5 pb-20">
+        <!-- 読み込み中表示 -->
+        <div class="text-center text-slate-400 font-bold">薬局情報を取得中...</div>
+    </div>
 
-            <!-- 店舗カード 2 -->
-            <div class="bg-white p-4 flex justify-between items-center border-b border-gray-100 active:bg-gray-50 transition-colors">
-                <div class="flex-1">
-                    <div class="flex items-center gap-2">
-                        <h2 class="font-bold text-lg text-gray-800">渋谷ABC薬局</h2>
-                        <span class="text-xs text-gray-400">0.2km</span>
-                    </div>
-                    <p class="text-yellow-600 font-bold">4組待ち</p>
-                </div>
-                <div class="text-right flex flex-col items-end gap-1">
-                    <span class="text-[10px] text-gray-400 font-bold">やや空いています</span>
-                    <div class="w-12 h-6 bg-yellow-200 rounded-full relative">
-                        <div class="absolute left-1 top-1 w-4 h-4 bg-yellow-500 rounded-full"></div>
-                    </div>
-                </div>
-            </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-            <!-- 店舗カード 3 -->
-            <div class="bg-white p-4 flex justify-between items-center border-b border-gray-100 active:bg-gray-50 transition-colors">
-                <div class="flex-1">
-                    <div class="flex items-center gap-2">
-                        <h2 class="font-bold text-lg text-gray-800">ヤクタタイム薬局</h2>
-                        <span class="text-xs text-gray-400">0.3km</span>
-                    </div>
-                    <p class="text-orange-600 font-bold">7組待ち</p>
-                </div>
-                <div class="text-right flex flex-col items-end gap-1">
-                    <span class="text-[10px] text-gray-400 font-bold">混雑しています</span>
-                    <div class="w-12 h-6 bg-gray-200 rounded-full relative">
-                        <div class="absolute right-1 top-1 w-4 h-4 bg-orange-500 rounded-full"></div>
-                    </div>
-                </div>
-        <div id="map"></div>
-        <div id="shop-list" class="mt-2">
-            <div id="status-message" class="p-10 text-center text-gray-400 font-bold italic">
-                データを同期中...
-</div>
-
-</div>
-</main>
-
-    <!-- ボトムナビゲーション -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 px-8 py-3 flex justify-between items-center z-[2000]">
-        <button class="text-gray-400 hover:text-green-600 transition-colors">
-            <i data-lucide="home" class="w-7 h-7"></i>
-        </button>
-        <button class="text-green-600">
-            <i data-lucide="map-pin" class="w-7 h-7"></i>
-        </button>
-        <button class="text-gray-400 hover:text-green-600 transition-colors">
-            <i data-lucide="search" class="w-7 h-7"></i>
-        </button>
-        <button class="text-gray-400 hover:text-green-600 transition-colors">
-            <i data-lucide="user" class="w-7 h-7"></i>
-        </button>
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-8 py-4 flex justify-between items-center z-[2000]">
-        <button class="text-green-600"><i data-lucide="home" class="w-7 h-7"></i></button>
-        <button class="text-gray-400"><i data-lucide="map-pin" class="w-7 h-7"></i></button>
-        <button class="text-gray-400"><i data-lucide="search" class="w-7 h-7"></i></button>
-        <button class="text-gray-400"><i data-lucide="user" class="w-7 h-7"></i></button>
-</nav>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-
-        // Firebase設定 (昨日のものを流用)
-const firebaseConfig = {
-apiKey: "AIzaSyAjSZkIuGQ4oRoMcZYLaZbdBXK45cBBXos",
-authDomain: "yakutime-for-ipad.firebaseapp.com",
-projectId: "yakutime-for-ipad",
-storageBucket: "yakutime-for-ipad.firebasestorage.app",
-messagingSenderId: "732724570588",
-            appId: "1:732724570588:web:6e64cba96c6fd17646c719",
-            measurementId: "G-0M86E87K2X"
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjSZkIuGQ4oRoMcZYLaZbdBXK45cBBXos",
+            authDomain: "yakutime-for-ipad.firebaseapp.com",
+            projectId: "yakutime-for-ipad",
+            storageBucket: "yakutime-for-ipad.firebasestorage.app",
+            messagingSenderId: "732724570588",
             appId: "1:732724570588:web:6e64cba96c6fd17646c719"
-};
+        };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
         const appId = 'yakutime-for-ipad';
 
-        let map;
-        let markers = {};
-        const shopListEl = document.getElementById('shop-list');
+        const listContainer = document.getElementById('pharmacy-list');
 
-        // アイコンの初期化
-lucide.createIcons();
-
-        // 地図の初期化
-        const initialLocation = [35.6600, 139.7000]; // 渋谷付近
-        const map = L.map('map', { zoomControl: false }).setView(initialLocation, 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-        // ダミー店舗のピンを追加
-        const shops = [
-            { name: "渋谷センター薬局", pos: [35.6600, 139.7000], color: "#22c55e" },
-            { name: "渋谷ABC薬局", pos: [35.6620, 139.7020], color: "#eab308" },
-            { name: "ヤクタタイム薬局", pos: [35.6580, 139.6980], color: "#f97316" }
-        ];
-
-        shops.forEach(shop => {
-            const icon = L.divIcon({
-                className: 'shop-marker',
-                html: `<div class="marker-pin" style="background: ${shop.color}"></div>`,
-                iconSize: [30, 42],
-                iconAnchor: [15, 42]
-        function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([35.6600, 139.7000], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        }
-
-        function getStatusInfo(count) {
-            if (count >= 10) return { color: '#f97316', label: '混雑', pos: 'right' };
-            if (count >= 5) return { color: '#eab308', label: 'やや混雑', pos: 'center' };
-            return { color: '#22c55e', label: '空き', pos: 'left' };
-        }
-
-        function updateUI(shopsData) {
-            shopListEl.innerHTML = '';
-            Object.values(markers).forEach(m => map.removeLayer(m));
-            markers = {};
-
-            if (shopsData.length === 0) {
-                shopListEl.innerHTML = `
-                    <div class="p-10 text-center text-gray-400">
-                        店舗データがありません。<br>
-                        <span class="text-xs">Pro画面で「設定を保存」するか<br>「デモデータ作成」を押してください。</span>
-                    </div>`;
-                return;
-            }
-
-            shopsData.forEach(shop => {
-                const info = getStatusInfo(shop.count);
-                const pos = [shop.lat, shop.lng];
+        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'shops'), (snap) => {
+            listContainer.innerHTML = "";
+            snap.forEach(doc => {
+                const shop = doc.data();
+                const shopId = doc.id;
+                const waitingCount = shop.status?.waiting?.count || 0;
+                const address = shop.address || "東京都渋谷区道玄坂1-2-3";
                 
-                const icon = L.divIcon({
-                    className: 'shop-marker',
-                    html: `<div class="marker-pin" style="background: ${info.color}"><span class="marker-text">${shop.count}</span></div>`,
-                    iconSize: [32, 42],
-                    iconAnchor: [16, 42]
-                });
-                
-                markers[shop.id] = L.marker(pos, { icon }).addTo(map).bindPopup(`<b>${shop.name}</b>`);
+                // Google Maps URL
+                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.name + " " + address)}`;
 
                 const card = document.createElement('div');
-                card.className = "bg-white p-5 flex justify-between items-center border-b border-gray-50 active:bg-gray-50 cursor-pointer";
-                
-                let swClass = "absolute top-1 w-4 h-4 rounded-full switch-dot ";
-                if(info.pos === 'left') swClass += "left-1 bg-green-500";
-                else if(info.pos === 'center') swClass += "left-4 bg-yellow-500";
-                else swClass += "right-1 bg-orange-500";
-
+                card.className = "pharmacy-card";
                 card.innerHTML = `
-                    <div class="flex-1">
-                        <h2 class="font-bold text-lg text-gray-800">${shop.name}</h2>
-                        <p class="font-black text-xl" style="color: ${info.color}">${shop.count}<span class="text-xs ml-1">組待ち</span></p>
+                    <div class="flex justify-between items-start mb-2">
+                        <h2 class="text-2xl font-black text-slate-800">${shop.name || shopId}</h2>
+                        <span class="status-badge">OPEN</span>
                     </div>
-                    <div class="text-right flex flex-col items-end gap-2">
-                        <span class="text-[10px] text-gray-400 font-black uppercase">${info.label}</span>
-                        <div class="w-12 h-6 bg-gray-100 rounded-full relative border border-gray-200">
-                            <div class="${swClass}"></div>
+                    
+                    <div class="address-link flex items-center gap-2 text-slate-400 font-bold mb-6" onclick="window.open('${googleMapsUrl}', '_blank')">
+                        <i data-lucide="map" class="w-5 h-5"></i>
+                        <span class="border-b border-slate-300">${address}</span>
+                    </div>
+
+                    <div class="waiting-box">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                                <i data-lucide="users"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 font-extrabold uppercase tracking-wider">現在の待ち</p>
+                                <p class="text-2xl font-black text-slate-800">${waitingCount} <span class="text-sm">組</span></p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-slate-400 font-extrabold uppercase tracking-wider">目安時間</p>
+                            <p class="text-2xl font-black text-indigo-600">${waitingCount * 15} <span class="text-sm">分</span></p>
                         </div>
                     </div>
+
+                    <a href="index.html?shopId=${shopId}" class="detail-button">
+                        状況を詳しく見る
+                    </a>
                 `;
-                card.onclick = () => {
-                    map.flyTo(pos, 17);
-                    markers[shop.id].openPopup();
-                };
-                shopListEl.appendChild(card);
+                listContainer.appendChild(card);
             });
-        }
-
-        function startSync() {
-            // 画像で実体化したパスに完全に合わせる
-            const shopCol = collection(db, 'artifacts', appId, 'public', 'data', 'shops');
-            
-            onSnapshot(shopCol, (snapshot) => {
-                const results = [];
-                snapshot.forEach(doc => {
-                    const d = doc.data();
-                    results.push({
-                        id: doc.id,
-                        name: d.name || "薬局",
-                        count: d.status?.waiting?.count || 0,
-                        lat: d.location?.lat || 35.66,
-                        lng: d.location?.lng || 139.70
-                    });
-                });
-                updateUI(results);
-            }, (err) => {
-                console.error("Sync Error:", err);
-                document.getElementById('status-message').innerText = "エラー: " + err.message;
-});
-            L.marker(shop.pos, { icon }).addTo(map).bindPopup(`<b>${shop.name}</b>`);
+            lucide.createIcons();
         });
-        }
-
-        // 認証
-        signInAnonymously(auth).catch(console.error);
-        window.onload = async () => {
-            initMap();
-            try {
-                await signInAnonymously(auth);
-                onAuthStateChanged(auth, (user) => { if (user) startSync(); });
-            } catch (e) { console.error(e); }
-        };
-</script>
+    </script>
 </body>
 </html>
