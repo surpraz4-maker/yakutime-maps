@@ -100,7 +100,7 @@
         
         .pharmacy-card:last-child {
             border-bottom: none;
-            margin-bottom: 80px;
+            margin-bottom: 100px; /* ナビバー分の余白 */
         }
 
         /* ボトムナビゲーション */
@@ -109,13 +109,13 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 80px;
+            height: 84px;
             background: white;
-            border-t: 1px solid #f1f5f9;
+            border-top: 1px solid #f1f5f9;
             display: flex;
             justify-content: space-around;
             align-items: center;
-            padding-bottom: 20px;
+            padding-bottom: 24px;
             z-index: 2000;
         }
         .nav-item {
@@ -127,6 +127,7 @@
             font-size: 11px;
             font-weight: 900;
             cursor: default;
+            width: 25%;
         }
         .nav-item.active {
             color: #2563eb;
@@ -165,7 +166,7 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation Bar (Added from image_efef9f.png) -->
+    <!-- Bottom Navigation Bar -->
     <div class="nav-bar">
         <div class="nav-item active btn-press">
             <i data-lucide="map" class="w-6 h-6"></i>
@@ -181,7 +182,7 @@
         </div>
         <div class="nav-item">
             <i data-lucide="user" class="w-6 h-6"></i>
-            <span>マイ</span>
+            <span>マイページ</span>
         </div>
     </div>
 
@@ -228,7 +229,7 @@
                 const name = shop.name || "名称未設定";
                 const address = shop.address || "東京都渋谷区道玄坂1-2-3";
                 
-                // --- ロジック修正: 現在の待ち組数 × 5分 ---
+                // 待ち組数 × 5分
                 const estimatedWait = count * 5;
 
                 const coords = {
